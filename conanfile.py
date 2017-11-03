@@ -17,8 +17,7 @@ class OaiConan(ConanFile):
 
     def source(self):
         tools.get('https://github.com/assimp/assimp/archive/v%s.tar.gz' % self.version,
-                  # sha256='60080d8ab4daaab309f65b3cffd99f19eb1af8d05623fff469b9b652818e286e'
-                  )
+                  sha256='60080d8ab4daaab309f65b3cffd99f19eb1af8d05623fff469b9b652818e286e')
 
         # https://b33p.net/kosada/node/13345
         # https://github.com/assimp/assimp/pull/1264
