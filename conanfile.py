@@ -43,6 +43,7 @@ class OaiConan(ConanFile):
             cmake.definitions['CMAKE_C_COMPILER'] = '/usr/local/bin/clang'
             cmake.definitions['CMAKE_C_FLAGS'] = cmake.definitions['CMAKE_CXX_FLAGS'] = '-Oz -mmacosx-version-min=10.8 -DNDEBUG'
             cmake.definitions['CMAKE_OSX_ARCHITECTURES'] = 'x86_64'
+            cmake.definitions['CMAKE_OSX_SYSROOT'] = '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk'
 
             cmake.configure(source_dir='../%s' % self.source_dir,
                             build_dir='.')
