@@ -5,19 +5,21 @@ class OaiConan(ConanFile):
     name = 'oai'
 
 	# Updating to a more recent version (https://b33p.net/kosada/node/13965) is blocking on C++11 support (https://b33p.net/kosada/node/9141).
-    version = '3.2'
+    source_version = '3.2'
+    package_version = '2'
+    version = '%s-%s' % (source_version, package_version)
 
     settings = 'os', 'compiler', 'build_type', 'arch'
     url = 'https://github.com/vuo/conan-oai'
     license = 'http://assimp.sourceforge.net/main_license.html'
     description = 'Imports various well-known 3D model formats in a uniform manner'
-    source_dir = 'assimp-%s' % version
+    source_dir = 'assimp-%s' % source_version
     build_dir = '_build'
     generators = 'cmake'
 
     def source(self):
-        tools.get('https://github.com/assimp/assimp/archive/v%s.tar.gz' % self.version,
-                  sha256='60080d8ab4daaab309f65b3cffd99f19eb1af8d05623fff469b9b652818e286e')
+        tools.get('https://github.com/assimp/assimp/archive/v%s.tar.gz' % self.source_version,
+                  sha256='187f825c563e84b1b17527a4da0351aa3d575dfd696a9d204ae4bb19ee7df94a')
 
         # https://b33p.net/kosada/node/13345
         # https://github.com/assimp/assimp/pull/1264
@@ -41,7 +43,7 @@ class OaiConan(ConanFile):
             cmake.definitions['CMAKE_COMPILER_IS_GNUCC'] = True
             cmake.definitions['CMAKE_CXX_COMPILER'] = '/usr/local/bin/clang++'
             cmake.definitions['CMAKE_C_COMPILER'] = '/usr/local/bin/clang'
-            cmake.definitions['CMAKE_C_FLAGS'] = cmake.definitions['CMAKE_CXX_FLAGS'] = '-Oz -mmacosx-version-min=10.8 -DNDEBUG'
+            cmake.definitions['CMAKE_C_FLAGS'] = cmake.definitions['CMAKE_CXX_FLAGS'] = '-Oz -mmacosx-version-min=10.10 -DNDEBUG'
             cmake.definitions['CMAKE_OSX_ARCHITECTURES'] = 'x86_64'
             cmake.definitions['CMAKE_OSX_SYSROOT'] = '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk'
 
