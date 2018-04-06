@@ -64,6 +64,9 @@ class OaiConan(ConanFile):
             if platform.system() == 'Darwin':
                 shutil.move('code/libassimp.3.2.0.dylib', 'code/liboai.dylib')
                 self.run('install_name_tool -id @rpath/liboai.dylib code/liboai.dylib')
+            elif platform.system() == 'Linux':
+                self.run('ls -lR')
+                shutil.move('code/libassimp.so.3.2.0', 'code/liboai.so')
 
     def package(self):
         if platform.system() == 'Darwin':
