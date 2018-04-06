@@ -1,4 +1,5 @@
 from conans import ConanFile, CMake, tools
+import platform
 import shutil
 
 class OaiConan(ConanFile):
@@ -46,22 +47,35 @@ class OaiConan(ConanFile):
             cmake.definitions['CMAKE_COMPILER_IS_GNUCC'] = True
             cmake.definitions['CMAKE_CXX_COMPILER'] = self.deps_cpp_info['llvm'].rootpath + '/bin/clang++'
             cmake.definitions['CMAKE_C_COMPILER'] = self.deps_cpp_info['llvm'].rootpath + '/bin/clang'
-            cmake.definitions['CMAKE_C_FLAGS'] = cmake.definitions['CMAKE_CXX_FLAGS'] = '-Oz -mmacosx-version-min=10.10 -DNDEBUG'
-            cmake.definitions['CMAKE_OSX_ARCHITECTURES'] = 'x86_64'
-            cmake.definitions['CMAKE_OSX_SYSROOT'] = '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk'
+            cmake.definitions['CMAKE_C_FLAGS'] = cmake.definitions['CMAKE_CXX_FLAGS'] = '-Oz -DNDEBUG'
+            cmake.definitions['CMAKE_CXX_FLAGS'] += ' -stdlib=libc++ -I' + ' -I'.join(self.deps_cpp_info['llvm'].include_paths)
+            if platform.system() == 'Darwin':
+                cmake.definitions['CMAKE_C_FLAGS'] += ' -mmacosx-version-min=10.10'
+                cmake.definitions['CMAKE_CXX_FLAGS'] += ' -mmacosx-version-min=10.10'
+                cmake.definitions['CMAKE_OSX_ARCHITECTURES'] = 'x86_64'
+                cmake.definitions['CMAKE_OSX_SYSROOT'] = '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk'
+            cmake.definitions['CMAKE_VERBOSE_MAKEFILE'] = 'ON'
 
             cmake.configure(source_dir='../%s' % self.source_dir,
                             build_dir='.')
             cmake.build()
 
             # The tagged version is 3.2, but the built version is 3.2.0...
-            shutil.move('code/libassimp.3.2.0.dylib', 'code/liboai.dylib')
-            self.run('install_name_tool -id @rpath/liboai.dylib code/liboai.dylib')
+            if platform.system() == 'Darwin':
+                shutil.move('code/libassimp.3.2.0.dylib', 'code/liboai.dylib')
+                self.run('install_name_tool -id @rpath/liboai.dylib code/liboai.dylib')
 
     def package(self):
+        if platform.system() == 'Darwin':
+            libext = 'dylib'
+        elif platform.system() == 'Linux':
+            libext = 'so'
+        else:
+            raise Exception('Unknown platform "%s"' % platform.system())
+
         self.copy('*.h', src='%s/include' % self.source_dir, dst='include')
         self.copy('*.inl', src='%s/include' % self.source_dir, dst='include')
-        self.copy('liboai.dylib', src='%s/code' % self.build_dir, dst='lib')
+        self.copy('liboai.%s' % libext, src='%s/code' % self.build_dir, dst='lib')
 
         self.copy('%s.txt' % self.name, src=self.source_dir, dst='license')
 
