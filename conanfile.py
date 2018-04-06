@@ -19,6 +19,12 @@ class OaiConan(ConanFile):
     build_dir = '_build'
     generators = 'cmake'
 
+    def requirements(self):
+        if platform.system() == 'Linux':
+            self.requires('patchelf/0.10pre-1@vuo/stable')
+        elif platform.system() != 'Darwin':
+            raise Exception('Unknown platform "%s"' % platform.system())
+
     def source(self):
         tools.get('https://github.com/assimp/assimp/archive/v%s.tar.gz' % self.source_version,
                   sha256='187f825c563e84b1b17527a4da0351aa3d575dfd696a9d204ae4bb19ee7df94a')
@@ -65,8 +71,9 @@ class OaiConan(ConanFile):
                 shutil.move('code/libassimp.3.2.0.dylib', 'code/liboai.dylib')
                 self.run('install_name_tool -id @rpath/liboai.dylib code/liboai.dylib')
             elif platform.system() == 'Linux':
-                self.run('ls -lR')
                 shutil.move('code/libassimp.so.3.2.0', 'code/liboai.so')
+                patchelf = self.deps_cpp_info['patchelf'].rootpath + '/bin/patchelf'
+                self.run('%s --set-soname liboai.so lib/liboai.so' % patchelf)
 
     def package(self):
         if platform.system() == 'Darwin':
