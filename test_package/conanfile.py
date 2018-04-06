@@ -7,10 +7,11 @@ class OaiTestConan(ConanFile):
         self.run('qbs -f "%s"' % self.source_folder)
 
     def imports(self):
-        self.copy('*.dylib', dst='bin', src='lib')
+        self.copy('*', src='lib', dst='lib')
 
     def test(self):
         self.run('qbs run')
 
         # Ensure we only link to system libraries and to libraries we built.
-        self.run('! (otool -L bin/liboai.dylib | tail +3 | egrep -v "^\s*(/usr/lib/|/System/|@rpath/)")')
+        self.run('! (otool -L lib/liboai.dylib | tail +3 | egrep -v "^\s*(/usr/lib/|/System/|@rpath/)")')
+        self.run('! (otool -l lib/liboai.dylib | grep -A2 LC_RPATH | cut -d"(" -f1 | grep "\s*path" | egrep -v "^\s*path @(executable|loader)_path")')
