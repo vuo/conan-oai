@@ -29,6 +29,8 @@ class OaiConan(ConanFile):
         with tools.chdir(self.source_dir):
             self.run('patch -p1 < ../1264.patch')
 
+        self.run('mv %s/LICENSE %s/%s.txt' % (self.source_dir, self.source_dir, self.name))
+
     def build(self):
         tools.mkdir(self.build_dir)
         with tools.chdir(self.build_dir):
@@ -59,7 +61,8 @@ class OaiConan(ConanFile):
         self.copy('*.h', src='%s/include' % self.source_dir, dst='include')
         self.copy('*.inl', src='%s/include' % self.source_dir, dst='include')
         self.copy('liboai.dylib', src='%s/code' % self.build_dir, dst='lib')
-        # self.run('ln -s . include/assimp')
+
+        self.copy('%s.txt' % self.name, src=self.source_dir, dst='license')
 
     def package_info(self):
         self.cpp_info.libs = ['oai']
