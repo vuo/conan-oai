@@ -6,7 +6,7 @@ class OaiConan(ConanFile):
 
 	# Updating to a more recent version (https://b33p.net/kosada/node/13965) is blocking on C++11 support (https://b33p.net/kosada/node/9141).
     source_version = '3.2'
-    package_version = '2'
+    package_version = '3'
     version = '%s-%s' % (source_version, package_version)
 
     settings = 'os', 'compiler', 'build_type', 'arch'
