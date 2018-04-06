@@ -9,6 +9,7 @@ class OaiConan(ConanFile):
     package_version = '3'
     version = '%s-%s' % (source_version, package_version)
 
+    build_requires = 'llvm/3.3-5@vuo/stable'
     settings = 'os', 'compiler', 'build_type', 'arch'
     url = 'https://github.com/vuo/conan-oai'
     license = 'http://assimp.sourceforge.net/main_license.html'
@@ -43,8 +44,8 @@ class OaiConan(ConanFile):
             cmake.definitions['ASSIMP_NO_EXPORT'] = True
             cmake.definitions['BUILD_SHARED_LIBS'] = True
             cmake.definitions['CMAKE_COMPILER_IS_GNUCC'] = True
-            cmake.definitions['CMAKE_CXX_COMPILER'] = '/usr/local/bin/clang++'
-            cmake.definitions['CMAKE_C_COMPILER'] = '/usr/local/bin/clang'
+            cmake.definitions['CMAKE_CXX_COMPILER'] = self.deps_cpp_info['llvm'].rootpath + '/bin/clang++'
+            cmake.definitions['CMAKE_C_COMPILER'] = self.deps_cpp_info['llvm'].rootpath + '/bin/clang'
             cmake.definitions['CMAKE_C_FLAGS'] = cmake.definitions['CMAKE_CXX_FLAGS'] = '-Oz -mmacosx-version-min=10.10 -DNDEBUG'
             cmake.definitions['CMAKE_OSX_ARCHITECTURES'] = 'x86_64'
             cmake.definitions['CMAKE_OSX_SYSROOT'] = '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk'
