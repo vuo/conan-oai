@@ -73,7 +73,7 @@ class OaiConan(ConanFile):
             elif platform.system() == 'Linux':
                 shutil.move('code/libassimp.so.3.2.0', 'code/liboai.so')
                 patchelf = self.deps_cpp_info['patchelf'].rootpath + '/bin/patchelf'
-                self.run('%s --set-soname liboai.so lib/liboai.so' % patchelf)
+                self.run('%s --set-soname liboai.so code/liboai.so' % patchelf)
 
     def package(self):
         if platform.system() == 'Darwin':
