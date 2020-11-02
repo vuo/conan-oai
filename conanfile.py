@@ -1,23 +1,32 @@
 from conans import ConanFile, CMake, tools
 import platform
+import os
 import shutil
 
 class OaiConan(ConanFile):
     name = 'oai'
 
-	# Updating to a more recent version (https://b33p.net/kosada/node/13965) is blocking on C++11 support (https://b33p.net/kosada/node/9141).
-    source_version = '3.2'
-    package_version = '3'
+    source_version = '5.0.1'
+    package_version = '0'
     version = '%s-%s' % (source_version, package_version)
 
-    build_requires = 'llvm/3.3-5@vuo/stable'
+    build_requires = (
+        'llvm/5.0.2-1@vuo/stable',
+        'macos-sdk/11.0-0@vuo/stable',
+        'vuoutils/1.2@vuo/stable',
+    )
     settings = 'os', 'compiler', 'build_type', 'arch'
-    url = 'https://github.com/vuo/conan-oai'
-    license = 'http://assimp.sourceforge.net/main_license.html'
+    url = 'http://www.assimp.org/'
+    license = 'http://www.assimp.org/index.php/license'
     description = 'Imports various well-known 3D model formats in a uniform manner'
     source_dir = 'assimp-%s' % source_version
     build_dir = '_build'
+    install_dir = '_install'
     generators = 'cmake'
+    libs = {
+        'IrrXML': '',
+        'assimp': '5.0.0',
+    }
 
     def requirements(self):
         if platform.system() == 'Linux':
@@ -27,15 +36,7 @@ class OaiConan(ConanFile):
 
     def source(self):
         tools.get('https://github.com/assimp/assimp/archive/v%s.tar.gz' % self.source_version,
-                  sha256='187f825c563e84b1b17527a4da0351aa3d575dfd696a9d204ae4bb19ee7df94a')
-
-        # https://b33p.net/kosada/node/13345
-        # https://github.com/assimp/assimp/pull/1264
-        tools.download('https://github.com/assimp/assimp/commit/2e455b78c8c39cf5507a1ced9887192c61fe85df.patch', '1264.patch')
-        # Conan's built-in `patch` requires an exact line-number match (https://github.com/techtonik/python-patch/issues/47).
-        # tools.patch(patch_file='1264.patch', base_path=self.source_dir)
-        with tools.chdir(self.source_dir):
-            self.run('patch -p1 < ../1264.patch')
+                  sha256='11310ec1f2ad2cd46b95ba88faca8f7aaa1efe9aa12605c55e3de2b977b3dbfc')
 
         self.run('mv %s/LICENSE %s/%s.txt' % (self.source_dir, self.source_dir, self.name))
 
@@ -47,35 +48,33 @@ class OaiConan(ConanFile):
             cmake.definitions['ASSIMP_BUILD_SAMPLES'] = False
             cmake.definitions['ASSIMP_BUILD_STATIC_LIB'] = False
             cmake.definitions['ASSIMP_BUILD_TESTS'] = False
-            cmake.definitions['ASSIMP_ENABLE_BOOST_WORKAROUND'] = True
             cmake.definitions['ASSIMP_NO_EXPORT'] = True
             cmake.definitions['BUILD_SHARED_LIBS'] = True
+            cmake.definitions['CMAKE_BUILD_TYPE'] = 'Release'
             cmake.definitions['CMAKE_COMPILER_IS_GNUCC'] = True
             cmake.definitions['CMAKE_CXX_COMPILER'] = self.deps_cpp_info['llvm'].rootpath + '/bin/clang++'
             cmake.definitions['CMAKE_C_COMPILER'] = self.deps_cpp_info['llvm'].rootpath + '/bin/clang'
             cmake.definitions['CMAKE_C_FLAGS'] = cmake.definitions['CMAKE_CXX_FLAGS'] = '-Oz -DNDEBUG'
             cmake.definitions['CMAKE_CXX_FLAGS'] += ' -stdlib=libc++ -I' + ' -I'.join(self.deps_cpp_info['llvm'].include_paths)
+            cmake.definitions['CMAKE_INSTALL_NAME_DIR'] = '@rpath'
+            cmake.definitions['CMAKE_INSTALL_PREFIX'] = '%s/../%s' % (os.getcwd(), self.install_dir)
             if platform.system() == 'Darwin':
-                cmake.definitions['CMAKE_C_FLAGS'] += ' -mmacosx-version-min=10.10'
-                cmake.definitions['CMAKE_CXX_FLAGS'] += ' -mmacosx-version-min=10.10'
-                cmake.definitions['CMAKE_OSX_ARCHITECTURES'] = 'x86_64'
-                cmake.definitions['CMAKE_OSX_SYSROOT'] = '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk'
-            cmake.definitions['CMAKE_VERBOSE_MAKEFILE'] = 'ON'
+                cmake.definitions['CMAKE_OSX_ARCHITECTURES'] = 'x86_64;arm64'
+                cmake.definitions['CMAKE_OSX_DEPLOYMENT_TARGET'] = '10.11'
+                cmake.definitions['CMAKE_OSX_SYSROOT'] = self.deps_cpp_info['macos-sdk'].rootpath
 
             cmake.configure(source_dir='../%s' % self.source_dir,
                             build_dir='.')
             cmake.build()
-
-            # The tagged version is 3.2, but the built version is 3.2.0...
-            if platform.system() == 'Darwin':
-                shutil.move('code/libassimp.3.2.0.dylib', 'code/liboai.dylib')
-                self.run('install_name_tool -id @rpath/liboai.dylib code/liboai.dylib')
-            elif platform.system() == 'Linux':
-                shutil.move('code/libassimp.so.3.2.0', 'code/liboai.so')
-                patchelf = self.deps_cpp_info['patchelf'].rootpath + '/bin/patchelf'
-                self.run('%s --set-soname liboai.so code/liboai.so' % patchelf)
+            cmake.install()
 
     def package(self):
+        import VuoUtils
+        with tools.chdir('%s/lib' % self.install_dir):
+            VuoUtils.fixLibs(self.libs, self.deps_cpp_info)
+            shutil.move('libassimp.dylib', 'liboai.dylib')
+            self.run('install_name_tool -id @rpath/liboai.dylib liboai.dylib')
+
         if platform.system() == 'Darwin':
             libext = 'dylib'
         elif platform.system() == 'Linux':
@@ -83,9 +82,10 @@ class OaiConan(ConanFile):
         else:
             raise Exception('Unknown platform "%s"' % platform.system())
 
-        self.copy('*.h', src='%s/include' % self.source_dir, dst='include')
-        self.copy('*.inl', src='%s/include' % self.source_dir, dst='include')
-        self.copy('liboai.%s' % libext, src='%s/code' % self.build_dir, dst='lib')
+        self.copy('*.h', src='%s/include' % self.install_dir, dst='include')
+        self.copy('*.inl', src='%s/include' % self.install_dir, dst='include')
+        self.copy('libIrrXML.%s' % libext, src='%s/lib' % self.install_dir, dst='lib')
+        self.copy('liboai.%s' % libext, src='%s/lib' % self.install_dir, dst='lib')
 
         self.copy('%s.txt' % self.name, src=self.source_dir, dst='license')
 
