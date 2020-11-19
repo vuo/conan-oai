@@ -7,7 +7,7 @@ class OaiConan(ConanFile):
     name = 'oai'
 
     source_version = '5.0.1'
-    package_version = '0'
+    package_version = '1'
     version = '%s-%s' % (source_version, package_version)
 
     build_requires = (
@@ -90,5 +90,5 @@ class OaiConan(ConanFile):
         self.copy('%s.txt' % self.name, src=self.source_dir, dst='license')
 
     def package_info(self):
-        self.cpp_info.libs = ['oai']
+        self.cpp_info.libs = ['oai', 'IrrXML']
         self.cpp_info.includedirs = ['include', 'include/assimp']
